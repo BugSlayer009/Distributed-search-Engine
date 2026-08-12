@@ -10,7 +10,7 @@ class BloomFilter:
 
     def __init__(self, capacity=1_000_000, error_rate=0.001):
         self.capacity = capacity
-        self.error_rate = error_rate
+        self.error_rate = error_rate   
 
         # How many bits do we need?
         self.size = int(
@@ -35,11 +35,16 @@ class BloomFilter:
         return [(h1 + i * h2) % self.size for i in range(self.hash_count)]
 
     def add(self, url):
-        """Add a URL to the filter."""
+        """
+        Add a URL to the filter.
+        Returns True if the URL was newly added, False if it was already present.
+        """
+        if url in self:
+            return False
         for pos in self._get_positions(url):
             self.bits[pos // 8] |= (1 << (pos % 8))
         self.count += 1
-
+        return True
     def __contains__(self, url):
         """
         Check if URL was already added.
@@ -64,14 +69,18 @@ if __name__ == "__main__":
     bf = BloomFilter(capacity=1000, error_rate=0.01)
     print(bf)
 
-    bf.add("https://python.org")
-    bf.add("https://wikipedia.org")
-    bf.add("https://github.com")
-
+    print(f"Added new: {bf.add('https://python.org')}")  # True
+    print(f"Added new: {bf.add('https://wikipedia.org')}")  # True
+    print(f"Added new: {bf.add('https://github.com')}")  # True
+    print(f"Added duplicate: {bf.add('https://python.org')}")  # False
+ 
     print("\nChecking URLs:")
     print(f"python.org:    {'SEEN' if 'https://python.org' in bf else 'NEW'}")
     print(f"wikipedia.org: {'SEEN' if 'https://wikipedia.org' in bf else 'NEW'}")
     print(f"google.com:    {'SEEN' if 'https://google.com' in bf else 'NEW'}")
     print(f"github.com:    {'SEEN' if 'https://github.com' in bf else 'NEW'}")
+
+    print(f"\nTotal unique URLs added: {bf.count}")
+    assert bf.count == 3, "Count should be 3 unique URLs"
 
     print("\nBloom Filter working correctly!")
